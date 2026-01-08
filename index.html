@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Template Generator</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#007BFF">
+  <style>
+    body { font-family: Verdana, sans-serif; margin: 0; padding: 20px; background: #f9f9f9; }
+    h2 { text-align: center; text-decoration: underline; font-weight: bold; margin-bottom: 20px; }
+    .container { display: flex; gap: 20px; flex-wrap: wrap; }
+    .form-container, .output-container { flex: 1 1 45%; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    label { display: block; margin-top: 10px; font-weight: bold; }
+    input, select, textarea, button { width: 100%; margin-top: 5px; padding: 10px; font-size: 14px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
+    button { background: #007BFF; color: #fff; cursor: pointer; border: none; margin-top: 15px; }
+    button:hover { background: #0056b3; }
+    .output-container { display: flex; flex-direction: column; }
+    #output { flex-grow: 1; min-height: 400px; border: 1px solid #ccc; padding: 10px; white-space: pre-wrap; overflow-y: auto; font-size: 14px; }
+    .hidden-textarea { position: absolute; left: -9999px; }
+    .copy-confirm { color: green; margin-top: 10px; display: none; }
+    @media (max-width: 900px) {
+      .container { flex-direction: column !important; }
+      .form-container, .output-container { flex: 1 1 100% !important; max-width: 100% !important; }
+      input, select, textarea, button { font-size: 16px; padding: 14px; }
+      button { font-size: 18px; padding: 16px; border-radius: 10px; }
+      label { font-size: 16px; }
+      body { padding: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <h2>Email Template Generator by Tapendu</h2>
+  <div class="container">
+    <div class="form-container">
+      <label for="template">Choose Template:</label>
+      <select id="template">
+        <option value="payroll">Payroll Template</option>
+        <option value="pos">POS Template</option>
+        <option value="pospayroll">POS with Payroll Template</option>
+        <option value="purchase">Petpooja Purchase Template</option>
+        <option value="wcd">WCD Template</option>
+	<option value="task">Task Template</option>
+	<option value="reservation">Reservation Template</option>
+	<option value="edc">Mosambee EDC & Petpooja Pay/EDC Template</option>
+	<option value="retail">Retail POS Template</option>
+      </select>
+      <label for="date">Training Provided Date:</label>
+      <input type="date" id="date">
+      <label for="org">Organization/Outlet Name:</label>
+      <input type="text" id="org">
+      <label for="start">Training Start Time:</label>
+      <input type="time" id="start">
+      <label for="end">Training End Time:</label>
+      <input type="time" id="end">
+      <label for="person">Training Provided to:</label>
+      <input type="text" id="person">
+      <label for="contact">Contact Number of trainee:</label>
+      <input type="text" id="contact">
+      <button onclick="generateTemplate()">Generate</button>
+      <button onclick="resetForm()">Reset</button>
+    </div>
+
+    <div class="output-container">
+      <h3>Email Output</h3>
+      <div id="output" contenteditable="true"></div>
+      <button onclick="copyOutput()">Copy</button>
+      <div class="copy-confirm" id="copyConfirm">Copied!</div>
+      <textarea id="hiddenTextarea" class="hidden-textarea"></textarea>
+    </div>
+  </div>
+
+  <script>
+    // ---- Auto-save ----
+    function autoSave() {
+      document.querySelectorAll("input, select").forEach(el => localStorage.setItem(el.id, el.value));
+      localStorage.setItem("outputContent", document.getElementById("output").innerText);
+    }
+    function restoreData() {
+      document.querySelectorAll("input, select").forEach(el => {
+        const saved = localStorage.getItem(el.id);
+        if (saved !== null) el.value = saved;
+      });
+      const savedOutput = localStorage.getItem("outputContent");
+      if (savedOutput) document.getElementById("output").innerText = savedOutput;
+    }
+    window.addEventListener("input", autoSave);
+    window.addEventListener("change", autoSave);
+    window.addEventListener("keyup", autoSave);
+    window.addEventListener("load", restoreData);
+
+    // ---- Service Worker ----
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js").then(() => console.log("Service Worker Registered"));
+    }
+
+    // ---- Template Generator ----
+    function generateTemplate() {
+      const template = document.getElementById('template').value;
+      const date = document.getElementById('date').value;
+      const org = document.getElementById('org').value;
+      const start = formatTime(document.getElementById('start').value);
+      const end = formatTime(document.getElementById('end').value);
+      const person = document.getElementById('person').value;
+      const contact = document.getElementById('contact').value;
+
+      let content = "";
+
+      if (template === "retail") {
+        content = `Hello,
+
+This communication is a confirmation email for the onsite/Online training provided on *${date}*, the details for which are as follows:
+
+Org/Outlet Name : ${org}
+Training Start Time: ${start}
+Training End Time: ${end}
+Training Provided to: ${person}
+Contact Number of trainee: ${contact}
+
+In this training, I have covered:
+
+Basic Setup:
+Login Process : Yes / No
+Item Addition : Yes / No
+Inventory Preferences : Yes / No
+Sales Preferences : Yes / No
+POS Preferences : Yes / No
+GST and Tax Preferences : Yes / No
+
+POS & Hardware Setup:
+POS Installations and Counter Set-up : Yes / No
+Printers and Template Set-up : Yes / No
+Barcode Set-up and Printing Guide : Yes / No
+
+Operations & Transactions:
+Stock Management : Yes / No
+Purchase Bill and Purchase Training (Advance Plan) : Yes / No / NA
+Auto-sync and Retail Invoices on the Dashboard : Yes / No
+Dashboard Overview : Yes / No
+Invoice Creation and Preferences : Yes / No
+Process of Adding Receipts and Payments : Yes / No
+POS Overview and Understanding : Yes / No
+Step-by-step POS Usage Guide : Yes / No
+
+Reports & Monitoring:
+Reports and Dashboard : Yes / No
+
+Note : 
+
+If you need further support on any aspect, please contact us on +91 7969223344 or email us on support@petpooja.com
+Finally, I would request your acknowledgement on this email for our records.`;
+      } 
+      else if (template === "payroll") {
+        content = `Hello,
+
+This communication is a confirmation email for the onsite/online training provided on *${date}*, the details for which are as follows:
+
+Org/Outlet Name : ${org}
+Training Start Time: ${start}
+Training End Time: ${end}
+Training Provided to: ${person}
+Contact Number of trainee: ${contact}
+
+In this training, I have covered:
+
+Petpooja Payroll:
+
+Phase 1
+
+Owner Dashboard & Mobile App : Yes
+Biometric Device Intro & Setup : No
+Device Light Indication : No
+Wi-Fi Connectivity : No
+
+Phase 2
+
+Add Employee (Web & App) : Yes (Web)
+Biometric Registration : No
+Shift & Roster Management : Yes
+Week Off & Leave Setup : Yes
+User Management & Reports : Yes
+Payroll Module & Salary Slip : Yes
+Owner App Quick Actions : No
+
+Phase 3
+
+Employee App Training : No
+Language Setup : No
+Leave Apply & Regularisation : Yes
+Attendance & Salary Slip Check : Yes
+Re login after Device Change : Yes
+
+Note: 
+
+If you need further support on any aspect, please contact us on +91 7969223344 or email us on support@petpooja.com
+Finally, I would request your acknowledgement on this email for our records.`;
+      }
+      else if (template === "pos") {
+        content = `Hello,
+
+This communication is a confirmation email for the onsite training provided on *${date}*, the details for which are as follows:
+
+Org/Outlet Name : ${org}
+Training Start Time: ${start}
+Training End Time: ${end}
+Training Provided to: ${person}
+Contact Number of trainee: ${contact}
+
+In this training, I have covered:
+
+POS Check List:
+POS Installation & Setup : Yes / No
+Printer Configuration & Cash Drawer : Yes / No
+Billing & Order Flow : Yes / No
+Operations : Yes / No
+Item Management (POS Menu) : Yes / No
+Inventory & Stock Management : Yes / No
+Reports : Yes / No
+Restaurant Configuration & Logs : Yes / No
+
+Dashboard Check List:
+Main Dashboard View : Yes / No
+Daily Operations : Yes / No
+Menu Management : Yes / No
+Reports : Yes / No
+CRM : Yes / No
+User Management : Yes / No
+Petpooja Agent AI : Yes / No
+Petpooja App & Quick Links Configurations : Yes / No
+
+Note: 
+
+If you need further support on any aspect, please contact us on +91 7969223344 or email us on support@petpooja.com
+Finally, I would request your acknowledgement on this email for our records.`;
+      }
+      else if (template === "pospayroll") {
+        content = `Hello,
+
+This communication is a confirmation email for the onsite training provided on *${date}*, the details for which are as follows:
+
+Org/Outlet Name : ${org}
+Training Start Time: ${start}
+Training End Time: ${end}
+Training Provided to: ${person}
+Contact Number of trainee: ${contact}
+
+In this training, I have covered:
+
+Petpooja POSS : 
+1) Billing & KOT management.
+2) Printer Setup.(Kitchen LAN printer)
+3) Reports.
+4) Menu management.
+5) Owner Dashboard.
+6) Captain app ordering.
+
+Petpooja Payroll:
+Phase 1
+Owner Dashboard & Mobile App : Yes
+Biometric Device Intro & Setup : No
+Device Light Indication : No
+Wi-Fi Connectivity : No
+
+Phase 2
+Add Employee (Web & App) : Yes (Web)
+Biometric Registration : No
+Shift & Roster Management : Yes
+Week Off & Leave Setup : Yes
+User Management & Reports : Yes
+Payroll Module & Salary Slip : Yes
+Owner App Quick Actions : No
+
+Phase 3
+Employee App Training : No
+Language Setup : No
+Leave Apply & Regularisation : Yes
+Attendance & Salary Slip Check : Yes
+Re login after Device Change : Yes
+
+Note: 
+
+If you need further support on any aspect, please contact us on +91 7969223344 or email us on support@petpooja.com
+Finally, I would request your acknowledgement on this email for our records.`;
+      }
+      else if (template === "purchase") {
+        content = `Hello,
+
+This communication is a confirmation email for the onsite training provided on *${date}*, the details for which are as follows:
+
+Org/Outlet Name : ${org}
+Training Start Time: ${start}
+Training End Time: ${end}
+Training Provided to: ${person}
+Contact Number of trainee: ${contact}
+
+Hereby, I confirm that I completed the Petpooja Purchase training for the client. I covered below:
+
+Standard Raw Material / AI Recipe - activated: Yes/No
+Dashboard: Yes/No
+⁠Upload Invoice: Yes/No (mention count)
+⁠Review Invoice: Yes/No
+⁠Tag Management: Yes/No
+⁠Push to Petpooja: Yes/No
+⁠Reports: Yes/No
+⁠Petty Cash Management: Yes/No
+⁠Purchase App: Yes/No
+Banking & ⁠KYC: Yes/No
+
+Note :
+If you need further support on any aspect, please contact us on +91 7969223344 or email us on support@petpooja.com
+Finally, I would request your acknowledgement on this email for our records.`;
+	}
+      	else if (template === "task") {
+        content = `Hello,
+
+This communication is a confirmation email for the onsite training provided on *${date}*, the details for which are as follows:
+
+Org/Outlet Name : ${org}
+Training Start Time: ${start}
+Training End Time: ${end}
+Training Provided to: ${person}
+Contact Number of trainee: ${contact}
+
+Hereby, I confirm that I completed the Petpooja Purchase training for the client. I covered below:
+
+Task Assignment Process Understanding Taken : Yes / No
+Sub Task / Group Task – Applicable or Not : Yes / No / NA
+Project Management – Applicable or Not : Yes / No / NA
+Forms – Applicable or Not : Yes / No / NA
+Application Downloaded & Login URL Bookmarked : Yes / No
+Department Created & User Assigned : Yes / No
+Task Assignment and Browse Templates : Yes / No
+Task Completion Process Explained : Yes / No
+Reports : Yes / No
+
+Note :
+If you need further support on any aspect, please contact us on +91 7969223344 or email us on support@petpooja.com
+Finally, I would request your acknowledgement on this email for our records.`;
+      }
+      else if (template === "reservation") {
+      content = `Hello,
+
+This communication is a confirmation email for the onsite training provided on *${date}*, the details for which are as follows:
+
+Org/Outlet Name : ${org}
+Training Start Time: ${start}
+Training End Time: ${end}
+Training Provided to: ${person}
+Contact Number of trainee: ${contact}
+
+Hereby, I confirm that I completed the Petpooja Purchase training for the client. I covered below:
+
+Employee Management : Yes / No / NA
+Form & QR Creation : Yes / No
+Reservation and Queue Management Feature : Yes / No
+Inquiries : Yes / No
+Order While In Queue : Yes / No / NA
+Customer Profile : Yes / No
+RSVP Feature Explained : Yes / No
+Cover Charge & Transaction : Yes / No / NA
+Live Table Flow : Yes / No
+Calendar View : Yes / No
+Feedback Flow : Yes / No
+Reservations Management and Aggregator Integrations : Yes / No
+Report : Yes / No
+
+Note :
+
+If you need further support on any aspect, please contact us on +91 7969223344 or email us on support@petpooja.com
+Finally, I would request your acknowledgement on this email for our records.`;
+	}
+      	else if (template === "edc") {
+        content = `Hello,
+
+This communication is a confirmation email for the onsite training provided on *${date}*, the details for which are as follows:
+
+Org/Outlet Name : ${org}
+Training Start Time: ${start}
+Training End Time: ${end}
+Training Provided to: ${person}
+Contact Number of trainee: ${contact}
+
+Hereby, I confirm that I completed the Petpooja Purchase training for the client. I covered below:
+
+Mosambee EDC		
+
+Static IP Fix : Yes / No
+Explain POS Billing & Order Landing Process (Dine In Order) : Yes / No / NA
+MQTT Cover (Pick Up & Delivery Order) : Yes / No / NA
+Add Money Feature Guided : Yes / No / NA
+Finance Dashboard Training : Yes / No / NA
+Payment Reconciliation : Yes / No / NA
+
+Petpooja Pay/EDC		
+
+Explain POS Billing Process : Yes / No
+Demonstrate Payment Collection Process : Yes / No
+Share Transaction Proof : Yes / No
+Explain POS–EDC Device Connectivity & Static IP Fix : Yes / No
+
+Note :
+
+If you need further support on any aspect, please contact us on +91 7969223344 or email us on support@petpooja.com
+Finally, I would request your acknowledgement on this email for our records.`;
+      }
+      else if (template === "wcd") {
+      content = `Hello,
+
+This communication is a confirmation email for the onsite training provided on *${date}*, the details for which are as follows:
+
+Org/Outlet Name : ${org}
+Training Start Time: ${start}
+Training End Time: ${end}
+Training Provided to: ${person}
+Contact Number of trainee: ${contact}
+
+In this training, I have covered:
+1) Waiter Calling Devices(08) Installation(Setup type - wifi) & Training
+
+Here I attached the screenshot of the working WCD
+
+Note: You have to charge all the devices for a full night with a dedicated charger only and make sure every 4-5 days we can charge the device subsequently and if the devices is discharged fully then the device lights will be on after half an hour of continuously charging only.
+
+If you need further support on any aspect, please contact us on +91 7969223344 or email us on support@petpooja.com
+Finally, I would request your acknowledgement on this email for our records.`;
+      }
+
+      document.getElementById('output').innerText = content;
+      autoSave();
+    }
+
+    function resetForm() {
+      localStorage.clear();
+      document.querySelectorAll("input, select").forEach(el => el.value = "");
+      document.getElementById("output").innerText = "";
+    }
+    function copyOutput() {
+      const output = document.getElementById("output").innerText;
+      const hiddenTextarea = document.getElementById("hiddenTextarea");
+      hiddenTextarea.value = output;
+      hiddenTextarea.select();
+      hiddenTextarea.setSelectionRange(0, 99999);
+      document.execCommand("copy");
+      const confirmMsg = document.getElementById("copyConfirm");
+      confirmMsg.style.display = "block";
+      setTimeout(() => confirmMsg.style.display = "none", 2000);
+    }
+    function formatTime(time) {
+      if (!time) return "";
+      let [hour, minute] = time.split(":");
+      hour = parseInt(hour);
+      const ampm = hour >= 12 ? "P.M" : "A.M";
+      hour = hour % 12 || 12;
+      return `${hour}:${minute} ${ampm}`;
+    }
+  </script>
+</body>
+</html>
